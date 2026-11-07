@@ -1,25 +1,35 @@
-"""Métricas de avaliação. A classe de interesse é a MALIGNA (rótulo 0)."""
+import json
 
+import joblib
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score
 
-from mlops_demo.config import CLASSE_MALIGNA
-from mlops_demo.features import separar_xy
+from .config import ALVO, CLASSE_POSITIVA, FEATURES
 
 
-def calcular_metricas(y_real, y_previsto) -> dict:
-    """Recall e precisão da classe maligna, mais a acurácia como referência."""
-    return {
-        "recall_maligno": float(recall_score(y_real, y_previsto, pos_label=CLASSE_MALIGNA)),
-        "precisao_maligna": float(
-            precision_score(y_real, y_previsto, pos_label=CLASSE_MALIGNA, zero_division=0)
-        ),
-        "acuracia": float(accuracy_score(y_real, y_previsto)),
-        "n_amostras": int(len(y_real)),
+def avaliar(modelo, df, pos_label=CLASSE_POSITIVA):
+    """Recebe o modelo e o dataframe completo, separa os dados e calcula as métricas."""
+    X = df[FEATURES]
+    y = df[ALVO]
+    y_pred = modelo.predict(X)
+
+    metricas = {
+        "precision": float(precision_score(y, y_pred, pos_label=pos_label, zero_division=0)),
+        "recall": float(recall_score(y, y_pred, pos_label=pos_label, zero_division=0)),
+        "f1": float(f1_score(y, y_pred, pos_label=pos_label, zero_division=0)),
     }
+    return metricas
 
 
-def avaliar(modelo, df: pd.DataFrame) -> dict:
-    """Avalia um modelo treinado em um DataFrame com as colunas do projeto."""
-    X, y = separar_xy(df)
-    return calcular_metricas(y, modelo.predict(X))
+def main():
+    modelo = joblib.load("models/champion/model.joblib")
+    df = pd.read_csv("data/raw/base_holdout.csv")
+
+    metricas = avaliar(modelo, df)
+
+    with open("metrics.json", "w") as f:
+        json.dump(metricas, f, indent=4)
+
+
+if __name__ == "__main__":
+    main()

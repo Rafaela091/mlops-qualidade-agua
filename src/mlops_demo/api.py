@@ -1,56 +1,49 @@
-"""API de inferência (FastAPI) servindo o modelo campeão.
-
-Local:   uvicorn mlops_demo.api:app --reload
-Docker:  docker run -p 8000:8000 mlops-demo
-"""
-
-import json
 import os
-from pathlib import Path
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from mlops_demo import __version__, config
+from .config import FEATURES
 
-CAMINHO_MODELO = Path(os.environ.get("MODEL_PATH", config.MODELO_CAMPEAO))
-CAMINHO_METRICAS = CAMINHO_MODELO.with_name("metrics.json")
-
-app = FastAPI(title="Triagem de tumores (demo CI/CD/CT)", version=__version__)
-_modelo = joblib.load(CAMINHO_MODELO)
+app = FastAPI(title="API Qualidade da Água")
 
 
-class Exame(BaseModel):
-    """Os 30 atributos do exame, na mesma ordem do treino."""
-
-    atributos: list[float] = Field(min_length=30, max_length=30)
-
-
-class Predicao(BaseModel):
-    classe: str
-    probabilidade_maligno: float
-    versao_codigo: str
-
-
-@app.get("/health")
-def saude() -> dict:
-    metricas = {}
-    if CAMINHO_METRICAS.exists():
-        metricas = json.loads(CAMINHO_METRICAS.read_text(encoding="utf-8"))
-    return {"status": "ok", "versao_codigo": __version__, "metricas_do_campeao": metricas}
+# Definimos o formato exato que a API deve receber (os 8 parâmetros químicos)
+# Usamos 'alias' para lidar com os espaços e parênteses dos nomes originais das colunas
+class EntradaAgua(BaseModel):
+    pH: float = Field(alias="pH")
+    Turbidity: float = Field(alias="Turbidity (NTU)")
+    Temperature: float = Field(alias="Temperature (°C)")
+    DO: float = Field(alias="DO (mg/L)")
+    BOD: float = Field(alias="BOD (mg/L)")
+    Lead: float = Field(alias="Lead (mg/L)")
+    Mercury: float = Field(alias="Mercury (mg/L)")
+    Arsenic: float = Field(alias="Arsenic (mg/L)")
 
 
-@app.post("/predict", response_model=Predicao)
-def prever(exame: Exame) -> Predicao:
-    entrada = pd.DataFrame([exame.atributos], columns=config.FEATURES)
-    previsto = int(_modelo.predict(entrada)[0])
-    # a coluna da classe maligna (0) em predict_proba segue a ordem de classes_
-    coluna = list(_modelo.classes_).index(config.CLASSE_MALIGNA)
-    p_maligno = float(_modelo.predict_proba(entrada)[0][coluna])
-    return Predicao(
-        classe="maligno" if previsto == config.CLASSE_MALIGNA else "benigno",
-        probabilidade_maligno=round(p_maligno, 4),
-        versao_codigo=__version__,
-    )
+@app.get("/")
+def health_check():
+    return {"status": "ok", "projeto": "Monitorização de Água"}
+
+
+@app.post("/predict")
+def predict(entrada: EntradaAgua):
+    caminho_modelo = "models/champion/model.joblib"
+    if not os.path.exists(caminho_modelo):
+        raise HTTPException(status_code=503, detail="Modelo campeão não encontrado.")
+
+    modelo = joblib.load(caminho_modelo)
+
+    # Converte os dados recebidos para o formato de tabela do Pandas
+    dados = entrada.dict(by_alias=True)
+    df = pd.DataFrame([dados])
+
+    # Garante que a ordem das colunas é exatamente a esperada pelo modelo
+    df = df[FEATURES]
+
+    # Faz a previsão
+    predicao = int(modelo.predict(df)[0])
+
+    return {"predicao": predicao, "alerta": predicao == 1}

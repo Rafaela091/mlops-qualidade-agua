@@ -1,48 +1,35 @@
-"""Configuração central do projeto: caminhos, nomes de colunas e limiares de qualidade."""
-
-from pathlib import Path
-
 import yaml
-from sklearn.datasets import load_breast_cancer
 
-RAIZ = Path(__file__).resolve().parents[2]
+# Caminhos dos dados
+BASE_TREINO = "data/raw/base_treino.csv"
+BASE_HOLDOUT = "data/raw/base_holdout.csv"
+PASTA_LOTES = "data/raw/lotes/"
 
-# dados
-DADOS_BRUTOS = RAIZ / "data" / "raw"
-DADOS_LOTES = DADOS_BRUTOS / "lotes"
-DADOS_PROCESSADOS = RAIZ / "data" / "processed"
-BASE_TREINO = DADOS_BRUTOS / "base_treino.csv"
-BASE_HOLDOUT = DADOS_BRUTOS / "base_holdout.csv"
-TREINO_PROCESSADO = DADOS_PROCESSADOS / "treino.csv"
-AVALIACAO_PROCESSADA = DADOS_PROCESSADOS / "avaliacao.csv"
+# Caminhos dos modelos e métricas
+MODELO_CAMPEAO = "models/champion/model.joblib"
+METRICAS_CAMPEAO = "models/champion/metrics.json"
+MODELO_DESAFIANTE = "models/challenger/model.joblib"
+METRICAS_DESAFIANTE = "models/challenger/metrics.json"
 
-# modelos e relatórios
-MODELO_CAMPEAO = RAIZ / "models" / "champion" / "model.joblib"
-METRICAS_CAMPEAO = RAIZ / "models" / "champion" / "metrics.json"
-MODELO_CANDIDATO = RAIZ / "models" / "candidate" / "model.joblib"
-METRICAS_CANDIDATO = RAIZ / "reports" / "candidate_metrics.json"
-RELATORIO_GATE = RAIZ / "reports" / "gate.json"
-RESUMO_GATE = RAIZ / "reports" / "gate.md"
-RELATORIO_DRIFT = RAIZ / "reports" / "drift.md"
-PARAMS = RAIZ / "params.yaml"
+# Contrato de Dados e Modelo para Qualidade da Água
+FEATURES = [
+    "pH",
+    "Turbidity (NTU)",
+    "Temperature (°C)",
+    "DO (mg/L)",
+    "BOD (mg/L)",
+    "Lead (mg/L)",
+    "Mercury (mg/L)",
+    "Arsenic (mg/L)",
+]
 
-# esquema dos dados
-FEATURES = [str(nome) for nome in load_breast_cancer().feature_names]  # str puro, não numpy.str_
-ALVO = "target"
-# ATENÇÃO: no Breast Cancer do scikit-learn, 0 = MALIGNO e 1 = BENIGNO.
-CLASSE_MALIGNA = 0
-COLUNAS_TAMANHO = [c for c in FEATURES if any(p in c for p in ("radius", "perimeter", "area"))]
+ALVO = "Pollution Level"
+CLASSE_POSITIVA = 1
+COLUNAS_TESTE = ["pH", "Lead (mg/L)"]
 
-# limiares de qualidade (o "contrato" do modelo). Mudar aqui exige revisão em PR.
-RECALL_MINIMO = 0.90
-PRECISAO_MINIMA = 0.90
-TOLERANCIA_CAMPEAO = 0.0  # o candidato não pode ter recall menor que o campeão
-PISO_SANIDADE = 0.80  # o campeão não pode colapsar na base de referência (holdout fixo)
-LIMITE_DRIFT_P = 0.01  # p-valor do teste KS
-MIN_FEATURES_DRIFT = 3  # gatilho do CT: quantos atributos com drift disparam o retreino
+CONTRATO_LIMIARES = {"recall": 0.85, "precision": 0.70}
 
 
-def carregar_params() -> dict:
-    """Lê o params.yaml (hiperparâmetros e semente)."""
-    with open(PARAMS, encoding="utf-8") as arquivo:
-        return yaml.safe_load(arquivo)
+def carregar_params(caminho="params.yaml"):
+    with open(caminho) as f:
+        return yaml.safe_load(f)

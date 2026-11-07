@@ -1,34 +1,24 @@
-"""Teste de fumaça: chama /health e /predict de uma API em execução (sem dependências externas).
-
-Uso: python demo/smoke_test.py http://localhost:8000
-"""
-
-import csv
-import json
 import sys
-import urllib.request
-from pathlib import Path
 
-URL = sys.argv[1].rstrip("/") if len(sys.argv) > 1 else "http://localhost:8000"
-HOLDOUT = Path(__file__).resolve().parents[1] / "data" / "raw" / "base_holdout.csv"
+import requests
 
-
-def chamar(caminho: str, corpo: dict | None = None) -> dict:
-    dados = json.dumps(corpo).encode() if corpo is not None else None
-    requisicao = urllib.request.Request(
-        URL + caminho, data=dados, headers={"Content-Type": "application/json"}
-    )
-    with urllib.request.urlopen(requisicao, timeout=10) as resposta:
-        return json.loads(resposta.read())
+from cenarios import CENARIO_AGUA_BOA
 
 
-saude = chamar("/health")
-assert saude["status"] == "ok", saude
-print("health ok | versão:", saude["versao_codigo"])
+def run_smoke_test(url="http://localhost:8000"):
+    print(f"Testando API em {url}/predict...")
+    try:
+        response = requests.post(f"{url}/predict", json=CENARIO_AGUA_BOA)
+        response.raise_for_status()
+        resultado = response.json()
+        print("Teste passou! Resposta:", resultado)
+        assert "predicao" in resultado
+        return 0
+    except Exception as e:
+        print(f"Teste falhou: {e}")
+        return 1
 
-with open(HOLDOUT, encoding="utf-8") as arquivo:
-    linha = next(csv.DictReader(arquivo))
-linha.pop("target")
-predicao = chamar("/predict", {"atributos": [float(v) for v in linha.values()]})
-assert predicao["classe"] in {"maligno", "benigno"}, predicao
-print("predict ok |", predicao)
+
+if __name__ == "__main__":
+    url_alvo = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
+    sys.exit(run_smoke_test(url_alvo))
