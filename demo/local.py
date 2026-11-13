@@ -5,8 +5,10 @@ Uso (na raiz do projeto, com o ambiente virtual ativo):
     python demo/local.py ct     # o mesmo que .github/workflows/ct.yml (sem abrir PR)
 """
 
+import os
 import subprocess
 import sys
+from pathlib import Path
 
 PY = sys.executable
 
@@ -32,7 +34,9 @@ def executar(nome: str) -> int:
     resultados = []
     for titulo, comando in PASSOS[nome]:
         print(f"\n=== {titulo}")
-        codigo = subprocess.run(comando).returncode
+        ambiente = os.environ.copy()
+        ambiente["PATH"] = str(Path(PY).parent) + os.pathsep + ambiente.get("PATH", "")
+        codigo = subprocess.run(comando, env=ambiente, check=False).returncode
         resultados.append((titulo, codigo))
         if codigo != 0:
             print(f"--- FALHOU: {titulo}")

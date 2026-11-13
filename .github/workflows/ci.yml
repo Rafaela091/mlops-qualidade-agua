@@ -57,16 +57,16 @@ jobs:
         run: python -m mlops_demo.data validar
 
       - name: Testes de código
-        run: pytest -m codigo --junitxml=reports/junit-codigo.xml
+        run: python -m pytest -m codigo --junitxml=reports/junit-codigo.xml
 
       - name: Testes de dados
-        run: pytest -m dados --junitxml=reports/junit-dados.xml
+        run: python -m pytest -m dados --junitxml=reports/junit-dados.xml
 
       - name: Testes de modelo (treina com o código e o params.yaml deste commit)
-        run: pytest -m modelo --junitxml=reports/junit-modelo.xml
+        run: python -m pytest -m modelo --junitxml=reports/junit-modelo.xml
 
       - name: Testes de contrato da API
-        run: pytest -m api --junitxml=reports/junit-api.xml
+        run: python -m pytest -m api --junitxml=reports/junit-api.xml
 
       - name: Guardar relatórios de teste
         if: always()
