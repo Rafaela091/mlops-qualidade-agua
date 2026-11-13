@@ -1,49 +1,45 @@
-import os
+"""API de inferência para dados sintéticos de água."""
 
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from .config import FEATURES
+from mlops_demo import config
+from mlops_demo.data import validar_dataframe
 
-app = FastAPI(title="API Qualidade da Água")
+app = FastAPI(title="API de alerta de qualidade da água")
 
 
-# Definimos o formato exato que a API deve receber (os 8 parâmetros químicos)
-# Usamos 'alias' para lidar com os espaços e parênteses dos nomes originais das colunas
 class EntradaAgua(BaseModel):
-    pH: float = Field(alias="pH")
-    Turbidity: float = Field(alias="Turbidity (NTU)")
-    Temperature: float = Field(alias="Temperature (°C)")
-    DO: float = Field(alias="DO (mg/L)")
-    BOD: float = Field(alias="BOD (mg/L)")
-    Lead: float = Field(alias="Lead (mg/L)")
-    Mercury: float = Field(alias="Mercury (mg/L)")
-    Arsenic: float = Field(alias="Arsenic (mg/L)")
+    model_config = ConfigDict(extra="forbid")
+    ph: float = Field(alias="pH", ge=0, le=14)
+    turbidez: float = Field(alias="Turbidity (NTU)", ge=0, le=100)
+    temperatura: float = Field(alias="Temperature (°C)", ge=0, le=60)
+    oxigenio: float = Field(alias="DO (mg/L)", ge=0, le=25)
+    bod: float = Field(alias="BOD (mg/L)", ge=0, le=50)
+    chumbo: float = Field(alias="Lead (mg/L)", ge=0, le=1)
+    mercurio: float = Field(alias="Mercury (mg/L)", ge=0, le=0.1)
+    arsenio: float = Field(alias="Arsenic (mg/L)", ge=0, le=1)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/")
-def health_check():
-    return {"status": "ok", "projeto": "Monitorização de Água"}
+def raiz():
+    return {"status": "ok", "projeto": "Alerta de qualidade da água sintética"}
 
 
 @app.post("/predict")
 def predict(entrada: EntradaAgua):
-    caminho_modelo = "models/champion/model.joblib"
-    if not os.path.exists(caminho_modelo):
-        raise HTTPException(status_code=503, detail="Modelo campeão não encontrado.")
-
-    modelo = joblib.load(caminho_modelo)
-
-    # Converte os dados recebidos para o formato de tabela do Pandas
-    dados = entrada.dict(by_alias=True)
-    df = pd.DataFrame([dados])
-
-    # Garante que a ordem das colunas é exatamente a esperada pelo modelo
-    df = df[FEATURES]
-
-    # Faz a previsão
+    if not config.MODELO_CAMPEAO.exists():
+        raise HTTPException(status_code=503, detail="Modelo campeão indisponível")
+    df = pd.DataFrame([entrada.model_dump(by_alias=True)])[config.FEATURES]
+    if not validar_dataframe(df, exigir_alvo=False):
+        raise HTTPException(status_code=422, detail="Medições de água inválidas")
+    modelo = joblib.load(config.MODELO_CAMPEAO)
     predicao = int(modelo.predict(df)[0])
-
-    return {"predicao": predicao, "alerta": predicao == 1}
+    return {"predicao": predicao, "alerta": predicao == config.CLASSE_POSITIVA}
