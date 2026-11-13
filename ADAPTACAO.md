@@ -26,14 +26,16 @@ Classe positiva: `alerta_contaminacao=1`. Métrica principal: recall >= **0,85**
 
 | Evidência | URL da execução |
 |---|---|
-| E1 CI verde na `main` | Pendente no repositório Rafaela091 após envio da adaptação |
-| E2 CI vermelho controlado em PR | Pendente no repositório Rafaela091 |
-| E3 CT com drift e portão aprovado | Pendente no repositório Rafaela091 |
-| E4 CT com portão reprovado | Pendente no repositório Rafaela091 |
-| E5 CD verde em tag e pacote GHCR | Pendente no repositório Rafaela091 |
+| E1 CI verde na `main` | [CI verde na main](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461605982) |
+| E2 CI vermelho controlado em PR | [CI vermelho no step Testes de código](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461817592) |
+| E3 CT com drift e portão aprovado | [CT com drift e portão aprovado](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461836435) |
+| E4 CT com portão reprovado | [CT com portão reprovado](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461853441) |
+| E5 CD verde em tag e pacote GHCR | [CD da tag v1.0.0](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461886851) |
+
+[Pacote publicado no GHCR](https://github.com/Rafaela091/mlops-qualidade-agua/pkgs/container/mlops-qualidade-agua).
 
 ## Limites, riscos e contribuição
 
 O portão usa apenas um holdout sintético e pode falhar com dados reais, mudança de distribuição, rótulos errados ou vazamento. Em produção, monitoraríamos prevalência, qualidade das medições, drift, recall/precisão com rótulos posteriores, latência e erros da API. O modelo exige validação de domínio antes de qualquer uso real.
 
-**Contribuições:** Rafaela Barreiros criou o repositório e fez os commits iniciais. Incluir os demais integrantes e seus commits após a publicação da adaptação. **IA:** Codex foi usado para revisar e adaptar código, testes, documentação e validação local; decisões de publicação e revisão do modelo cabem à equipe.
+**Contribuições:** Rafaela Barreiros: criação do repositório e commits iniciais; o commit de adaptação consta em sua conta. Integrantes informados: [Luan-bs](https://github.com/Luan-bs), [Borgessz23](https://github.com/Borgessz23), [TainaDr](https://github.com/TainaDr) e [cauasauer](https://github.com/cauasauer). Suas contribuições específicas e commits ainda precisam ser registrados pela equipe; não constam no histórico atual. **IA:** assistente de IA usado para adaptar código, gerar dados sintéticos, escrever testes e documentação, executar os pipelines e registrar evidências.
