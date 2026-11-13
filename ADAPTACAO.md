@@ -32,7 +32,7 @@ Classe positiva: `alerta_contaminacao=1`. Métrica principal: recall >= **0,85**
 | E4 CT com portão reprovado | [CT com portão reprovado](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461853441) |
 | E5 CD verde em tag e pacote GHCR | [CD da tag v1.0.0](https://github.com/Rafaela091/mlops-qualidade-agua/actions/runs/43461886851) |
 
-[Pacote publicado no GHCR](https://github.com/Rafaela091/mlops-qualidade-agua/pkgs/container/mlops-qualidade-agua).
+[Pacote público no GHCR](https://github.com/Rafaela091/mlops-qualidade-agua/pkgs/container/mlops-qualidade-agua). A imagem `1.0.0` foi baixada anonimamente e passou no smoke test do contêiner (`/health` e `/predict`).
 
 ## Limites, riscos e contribuição
 
